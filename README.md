@@ -96,7 +96,7 @@ The following task will do this:
 
 ## Testing
 
-The `tests` directory contains configuration for running sanity and integration tests using ansible-test.
+The `tests` directory contains configuration for running sanity and integration tests using ansible-test..
 
 
 ## License Information
