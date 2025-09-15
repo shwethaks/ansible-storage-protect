@@ -7,7 +7,7 @@ NOTE: This collection is under development
 This collection provides a series of Ansible modules and plugins to help automate the deployment and configuration of a Storage Protect landscape comprising of multiple Storage Protect servers and clients. It can be used to automate perform simple [data protection operations](https://www.ibm.com/docs/en/storage-protect/8.1.24?topic=overview-data-protection-services) such as backup / restore, archive / retrieve - of the data or workloads supported by the IBM Storage Protect product. You can also automate the overall data protection governance for the enterprise, using policy-based data management. For more information regarding this product, see [IBM Documentation](https://ibm.com/docs/en).
 
 
-## Requirements
+### Requirements
 
 ### Ansible version compatibility
 
