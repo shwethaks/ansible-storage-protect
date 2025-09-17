@@ -1,6 +1,6 @@
-# =========================
+# ==========================
 
-name: Run Ansible Playbook to Register Client
+name: Run Ansible Playbook to Install Client
 
 on:
   push:
