@@ -1,6 +1,6 @@
 ---
 - name: Install BA Client
-  hosts: all
+  hosts: storage_protect_clients
   become: true
   roles:
     - role: ibm.storage_protect.ba_client_install
@@ -11,7 +11,7 @@
         ba_client_tar_repo: "/home/githubrunner/tars"
 
 - name: Upgrade BA Client
-  hosts: all
+  hosts: storage_protect_clients
   become: true
   roles:
     - role: ibm.storage_protect.ba_client_install
@@ -22,7 +22,7 @@
         ba_client_tar_repo: "/home/githubrunner/tars"
 
 - name: Uninstall BA Client
-  hosts: all
+  hosts: storage_protect_clients
   become: true
   roles:
     - role: ibm.storage_protect.ba_client_install
