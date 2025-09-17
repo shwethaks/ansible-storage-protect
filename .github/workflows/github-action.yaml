@@ -42,7 +42,7 @@ jobs:
           CLIENT_POLICY_DOMAIN: ${{ secrets.CLIENT_POLICY_DOMAIN }}
           CLIENT_HOST: ${{ secrets.CLIENT_HOST }}
           BA_CLIENT_TAR_REPO_PATH: "/home/githubrunner/tars"
-          ba_client_version: "8.1.27.0"
+          ba_client_version: "8.1.26.0"
         run: |
           EXIT_CODE=0
 
@@ -59,7 +59,7 @@ jobs:
                 \"CLIENT_POLICY_DOMAIN\": \"$CLIENT_POLICY_DOMAIN\",
                 \"CLIENT_HOST\": \"$CLIENT_HOST\",
                 \"STORAGE_PROTECT_REQUEST_TIMEOUT\": 10,
-                \"ba_client_version\": \"8.1.27.0\"
+                \"ba_client_version\": \"8.1.26.0\"
               }" || {
                 echo "❌ Playbook failed: $playbook"
                 EXIT_CODE=1
