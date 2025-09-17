@@ -41,7 +41,7 @@ jobs:
           PLAYBOOK="tests/integration/targets/ba_client_install/test_ba_client_install_linux.yml"
           echo "▶️ Running $PLAYBOOK"
 
-          ansible-playbook -i inventory.ini "$PLAYBOOK" \
+          ansible-playbook -i inventory.yml "$PLAYBOOK" \
             --extra-vars "{
               \"CLIENT_POLICY_DOMAIN\": \"${CLIENT_POLICY_DOMAIN}\",
               \"CLIENT_PASSWORD\": \"${CLIENT_PASSWORD}\",
