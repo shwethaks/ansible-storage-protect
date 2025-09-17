@@ -47,7 +47,7 @@ jobs:
               \"CLIENT_PASSWORD\": \"${CLIENT_PASSWORD}\",
               \"STORAGE_PROTECT_REQUEST_TIMEOUT\": 10,
               \"ba_client_version\": \"8.1.26.0\",
-              \"BA_CLIENT_TAR_REPO_PATH\": \"/tmp/ba_client_install/"
+              \"BA_CLIENT_TAR_REPO_PATH\": \"/tmp/ba_client_install\"
             }" || {
               echo "❌ Playbook failed: $PLAYBOOK"
               EXIT_CODE=1
