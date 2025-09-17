@@ -1,25 +1,25 @@
 ---
-# - name: Install BA Client
-#   hosts: storage_protect_clients
-#   become: true
-#   roles:
-#     - role: ibm.storage_protect.ba_client_install
-#       vars:
-#         ba_client_start_daemon: true
-#         ba_client_state: "present"
-#         ba_client_version: "8.1.23.0"
-#         ba_client_tar_repo: "/home/githubrunner/tars"
+- name: Install BA Client
+  hosts: storage_protect_clients
+  become: true
+  roles:
+    - role: ibm.storage_protect.ba_client_install
+      vars:
+        ba_client_start_daemon: true
+        ba_client_state: "present"
+        ba_client_version: "8.1.23.0"
+        ba_client_tar_repo: "/home/githubrunner/tars"
 
-# - name: Upgrade BA Client
-#   hosts: storage_protect_clients
-#   become: true
-#   roles:
-#     - role: ibm.storage_protect.ba_client_install
-#       vars:
-#         ba_client_start_daemon: true
-#         ba_client_state: "present"
-#         ba_client_version: "8.1.24.0"
-#         ba_client_tar_repo: "/home/githubrunner/tars"
+- name: Upgrade BA Client
+  hosts: storage_protect_clients
+  become: true
+  roles:
+    - role: ibm.storage_protect.ba_client_install
+      vars:
+        ba_client_start_daemon: true
+        ba_client_state: "present"
+        ba_client_version: "8.1.24.0"
+        ba_client_tar_repo: "/home/githubrunner/tars"
 
 - name: Uninstall BA Client
   hosts: storage_protect_clients
