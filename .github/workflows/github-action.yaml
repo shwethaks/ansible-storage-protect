@@ -1,6 +1,4 @@
-# =========================
-
-name: Run Ansible Playbook to Install Client
+name: Run Multiple Ansible Playbooks
 
 on:
   push:
@@ -8,8 +6,48 @@ on:
       - dev-gitops
 
 jobs:
-  run_ansible_playbook:
+  run_ansible_playbooks:
     runs-on: self-hosted
+
+    strategy:
+      fail-fast: false
+      matrix:
+        playbooks:
+          - name: "Client Install"
+            path: "tests/integration/targets/ba_client_install/test_ba_client_install_linux.yml"
+            vars: |
+              {
+                "CLIENT_POLICY_DOMAIN": "${{ secrets.CLIENT_POLICY_DOMAIN }}",
+                "CLIENT_PASSWORD": "${{ secrets.CLIENT_PASSWORD }}",
+                "STORAGE_PROTECT_REQUEST_TIMEOUT": 10,
+                "ba_client_version": "8.1.26.0",
+                "BA_CLIENT_TAR_REPO_PATH": "/tmp/ba_client_install"
+              }
+
+          - name: "Server Install"
+            path: "https://github.com/IBM/ansible-storage-protect/tree/main/tests/integration/targets/sp_server_install/sp_server_install_playbook.yml"
+            vars: |
+              {
+                "sp_server_bin_repo": "/path/to/repo/on/controlNode",
+                "sp_server_state": "present",
+                "sp_server_version": "8.1.26.0",
+                "ssl_password": "Ibm@@123456789"
+              }
+
+          - name: "DSM.OPT Config"
+            path: "playbooks/configure_dsm_opt.yml"
+            vars_file: "vars/dsm_opt_vars.yml"
+
+          - name: "Node Register"
+            path: "playbooks/node_register.yml"
+            vars: |
+              {
+                "name": "NewNode",
+                "node_password": "mypassword",
+                "policy_domain": "MyPolicy",
+                "state": "present",
+                "schedules": "daily_schedule"
+              }
 
     steps:
       - name: Checkout Code
@@ -22,38 +60,83 @@ jobs:
           pip install --upgrade pip
           pip install ansible
 
-      - name: Set environment variable to disable SSH host key checking
+      - name: Disable SSH host key checking
         run: echo "ANSIBLE_HOST_KEY_CHECKING=False" >> $GITHUB_ENV
 
-      - name: Install Dependencies
+      - name: Install Ansible Dependencies
         run: |
           ansible-galaxy collection install ansible.posix
           ansible-galaxy collection install ibm.storage_protect --force
 
-      - name: Run Test Playbook (non-blocking)
+      - name: Run Playbook - ${{ matrix.playbooks.name }}
         working-directory: ${{ github.workspace }}
-        env:
-          CLIENT_POLICY_DOMAIN: ${{ secrets.CLIENT_POLICY_DOMAIN }}
-          CLIENT_PASSWORD: ${{ secrets.CLIENT_PASSWORD }}
         run: |
-          EXIT_CODE=0
+          echo "▶️ Running playbook: ${{ matrix.playbooks.path }}"
+          if [ -n "${{ matrix.playbooks.vars_file }}" ]; then
+            ansible-playbook -i inventory.ini "${{ matrix.playbooks.path }}" -e @"${{ matrix.playbooks.vars_file }}"
+          else
+            ansible-playbook -i inventory.ini "${{ matrix.playbooks.path }}" --extra-vars '${{ matrix.playbooks.vars }}'
+          fi
 
-          PLAYBOOK="tests/integration/targets/ba_client_install/test_ba_client_install_linux.yml"
-          echo "▶️ Running $PLAYBOOK"
 
-          ansible-playbook -i inventory.yml "$PLAYBOOK" \
-            --extra-vars "{
-              \"CLIENT_POLICY_DOMAIN\": \"${CLIENT_POLICY_DOMAIN}\",
-              \"CLIENT_PASSWORD\": \"${CLIENT_PASSWORD}\",
-              \"STORAGE_PROTECT_REQUEST_TIMEOUT\": 10,
-              \"ba_client_version\": \"8.1.26.0\",
-              \"BA_CLIENT_TAR_REPO_PATH\": \"/tmp/ba_client_install\"
-            }" || {
-              echo "❌ Playbook failed: $PLAYBOOK"
-              EXIT_CODE=1
-            }
 
-          exit $EXIT_CODE
+
+# =========================
+
+# name: Run Ansible Playbook to Install Client
+
+# on:
+#   push:
+#     branches:
+#       - dev-gitops
+
+# jobs:
+#   run_ansible_playbook:
+#     runs-on: self-hosted
+
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v4
+
+#       - name: Set up Python venv and Ansible
+#         run: |
+#           python3.12 -m venv ~/ansible_venv
+#           source ~/ansible_venv/bin/activate
+#           pip install --upgrade pip
+#           pip install ansible
+
+#       - name: Set environment variable to disable SSH host key checking
+#         run: echo "ANSIBLE_HOST_KEY_CHECKING=False" >> $GITHUB_ENV
+
+#       - name: Install Dependencies
+#         run: |
+#           ansible-galaxy collection install ansible.posix
+#           ansible-galaxy collection install ibm.storage_protect --force
+
+#       - name: Run Test Playbook (non-blocking)
+#         working-directory: ${{ github.workspace }}
+#         env:
+#           CLIENT_POLICY_DOMAIN: ${{ secrets.CLIENT_POLICY_DOMAIN }}
+#           CLIENT_PASSWORD: ${{ secrets.CLIENT_PASSWORD }}
+#         run: |
+#           EXIT_CODE=0
+
+#           PLAYBOOK="tests/integration/targets/ba_client_install/test_ba_client_install_linux.yml"
+#           echo "▶️ Running $PLAYBOOK"
+
+#           ansible-playbook -i inventory.yml "$PLAYBOOK" \
+#             --extra-vars "{
+#               \"CLIENT_POLICY_DOMAIN\": \"${CLIENT_POLICY_DOMAIN}\",
+#               \"CLIENT_PASSWORD\": \"${CLIENT_PASSWORD}\",
+#               \"STORAGE_PROTECT_REQUEST_TIMEOUT\": 10,
+#               \"ba_client_version\": \"8.1.26.0\",
+#               \"BA_CLIENT_TAR_REPO_PATH\": \"/tmp/ba_client_install\"
+#             }" || {
+#               echo "❌ Playbook failed: $PLAYBOOK"
+#               EXIT_CODE=1
+#             }
+
+#           exit $EXIT_CODE
 
 
 
