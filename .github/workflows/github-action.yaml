@@ -9,75 +9,74 @@ jobs:
   run_ansible_playbooks:
     runs-on: self-hosted
 
-    strategy:
-      fail-fast: false
-      matrix:
-        playbooks:
-          - name: "Client Install"
-            path: "tests/integration/targets/ba_client_install/test_ba_client_install_linux.yml"
-            vars: |
-              {
-                "CLIENT_POLICY_DOMAIN": "${{ secrets.CLIENT_POLICY_DOMAIN }}",
-                "CLIENT_PASSWORD": "${{ secrets.CLIENT_PASSWORD }}",
-                "STORAGE_PROTECT_REQUEST_TIMEOUT": 10,
-                "ba_client_version": "8.1.26.0",
-                "BA_CLIENT_TAR_REPO_PATH": "/tmp/ba_client_install"
-              }
-
-          - name: "Server Install"
-            path: "https://github.com/IBM/ansible-storage-protect/tree/main/tests/integration/targets/sp_server_install/sp_server_install_playbook.yml"
-            vars: |
-              {
-                "sp_server_bin_repo": "/path/to/repo/on/controlNode",
-                "sp_server_state": "present",
-                "sp_server_version": "8.1.26.0",
-                "ssl_password": "Ibm@@123456789"
-              }
-
-          - name: "DSM.OPT Config"
-            path: "playbooks/configure_dsm_opt.yml"
-            vars_file: "vars/dsm_opt_vars.yml"
-
-          - name: "Node Register"
-            path: "playbooks/node_register.yml"
-            vars: |
-              {
-                "name": "NewNode",
-                "node_password": "mypassword",
-                "policy_domain": "MyPolicy",
-                "state": "present",
-                "schedules": "daily_schedule"
-              }
+    env:
+      ANSIBLE_HOST_KEY_CHECKING: "False"
+      CLIENT_POLICY_DOMAIN: ${{ secrets.CLIENT_POLICY_DOMAIN }}
+      CLIENT_PASSWORD: ${{ secrets.CLIENT_PASSWORD }}
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Python venv and Ansible
+      - name: Set up Python and Ansible
         run: |
-          python3.12 -m venv ~/ansible_venv
+          python3 -m venv ~/ansible_venv
           source ~/ansible_venv/bin/activate
-          pip install --upgrade pip
-          pip install ansible
+          pip install --upgrade pip ansible
 
-      - name: Disable SSH host key checking
-        run: echo "ANSIBLE_HOST_KEY_CHECKING=False" >> $GITHUB_ENV
-
-      - name: Install Ansible Dependencies
+      - name: Install Ansible Collections
         run: |
+          source ~/ansible_venv/bin/activate
           ansible-galaxy collection install ansible.posix
           ansible-galaxy collection install ibm.storage_protect --force
 
-      - name: Run Playbook - ${{ matrix.playbooks.name }}
+      - name: Run Multiple Playbooks
         working-directory: ${{ github.workspace }}
         run: |
-          echo "▶️ Running playbook: ${{ matrix.playbooks.path }}"
-          if [ -n "${{ matrix.playbooks.vars_file }}" ]; then
-            ansible-playbook -i inventory.ini "${{ matrix.playbooks.path }}" -e @"${{ matrix.playbooks.vars_file }}"
-          else
-            ansible-playbook -i inventory.ini "${{ matrix.playbooks.path }}" --extra-vars '${{ matrix.playbooks.vars }}'
-          fi
+          set -e
+          source ~/ansible_venv/bin/activate
+          
+          EXIT_CODE=0
 
+          declare -A PLAYBOOKS
+          PLAYBOOKS["ClientInstall"]="tests/integration/targets/ba_client_install/test_ba_client_install_linux.yml"
+          PLAYBOOKS["ServerInstall"]="tests/integration/targets/sp_server_install/test_sp_server_install.yml"
+          PLAYBOOKS["AgentInstall"]="tests/integration/targets/storage_agent_configure/test_storage_agent_configure.yml"
+
+          for NAME in "${!PLAYBOOKS[@]}"; do
+            PLAYBOOK="${PLAYBOOKS[$NAME]}"
+            echo "▶️ Running $NAME => $PLAYBOOK"
+
+            if [[ "$NAME" == "ClientInstall" ]]; then
+              EXTRA_VARS="{
+                \"CLIENT_POLICY_DOMAIN\": \"${CLIENT_POLICY_DOMAIN}\",
+                \"CLIENT_PASSWORD\": \"${CLIENT_PASSWORD}\",
+                \"STORAGE_PROTECT_REQUEST_TIMEOUT\": 10,
+                \"ba_client_version\": \"8.1.26.0\",
+                \"BA_CLIENT_TAR_REPO_PATH\": \"/tmp/ba_client_install\"
+              }"
+            elif [[ "$NAME" == "ServerInstall" ]]; then
+              EXTRA_VARS="{
+                \"SERVER_INSTALL_PATH\": \"/opt/ibm/server\",
+                \"SERVER_PORT\": 1500
+              }"
+            elif [[ "$NAME" == "AgentInstall" ]]; then
+              EXTRA_VARS="{
+                \"AGENT_LOG_PATH\": \"/var/log/agent\",
+                \"AGENT_CONFIG\": \"/etc/agent/conf.yaml\"
+              }"
+            fi
+
+            ansible-playbook -i inventory.yml "$PLAYBOOK" \
+              --extra-vars "$EXTRA_VARS" || {
+                echo "❌ $NAME playbook failed"
+                EXIT_CODE=1
+              }
+
+            echo "✅ Completed: $NAME"
+          done
+
+          exit $EXIT_CODE
 
 
 
